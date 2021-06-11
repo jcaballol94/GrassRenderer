@@ -1,0 +1,33 @@
+#pragma kernel PlaceVegetation
+
+RWStructuredBuffer<float3> _Positions;
+
+float3 _TerrainSize;
+float3 _TerrainPosition;
+uint2 _Resolution;
+
+float2 GetUV (uint3 id)
+{
+    return (id.xy + 0.5) / _Resolution;
+}
+
+void SetPosition(uint3 id, float3 position)
+{
+    if (id.x < _Resolution.x && id.y < _Resolution.y)
+    {
+        _Positions[id.x * _Resolution.y + id.y] = position;
+    }
+}
+
+[numthreads(8,8,1)]
+void PlaceVegetation (uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = GetUV(id);
+    uv -= 0.5;
+    uv *= _TerrainSize.xz;
+
+    float3 position = _TerrainPosition;
+    position.xz += uv;
+
+    SetPosition(id, position);
+}
