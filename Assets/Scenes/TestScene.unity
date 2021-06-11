@@ -331,9 +331,9 @@ MonoBehaviour:
   m_mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   m_material: {fileID: 2100000, guid: b8462068cce6ada4b87c520f5934ffca, type: 2}
   m_tileSize: 2
-  m_resolution: {x: 25, y: 50}
+  m_resolution: {x: 26, y: 26}
   m_computeShader: {fileID: 7200000, guid: 10d787696351ff1499b56f8434a0be7e, type: 3}
-  m_terrainSize: {x: 50, y: 2, z: 100}
+  m_terrainSize: {x: 52, y: 2, z: 51.11}
   m_terrainPosition: {x: 0, y: 0, z: 0}
 --- !u!4 &2055529137
 Transform:

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace CaballolDev{
+    [ExecuteAlways]
     public class GrassRenderer : MonoBehaviour
     {
         [SerializeField] private Mesh m_mesh;
@@ -24,19 +25,18 @@ namespace CaballolDev{
         [SerializeField] private Vector3 m_terrainPosition;
 
         private ComputeBuffer m_positionsBuffer;
+        private Vector2Int m_bufferResolution;
 
         private void OnEnable()
         {
             // if (!m_terrain) return;
 
-            // 3*4 = 3 float of 4 bytes each
-            m_positionsBuffer = new ComputeBuffer(m_resolution.x * m_resolution.y, 3*4);
+            CreateBuffer();
         }
 
         private void OnDisable()
         {
-            if (m_positionsBuffer != null) m_positionsBuffer.Release();
-            m_positionsBuffer = null;
+            ReleaseBuffer();
         }
 
         private void OnValidate()
@@ -52,7 +52,11 @@ namespace CaballolDev{
         private void Update()
         {
             if (m_computeShader == null) return;
-            if (m_positionsBuffer == null) return;
+
+            // Ensure that the buffer exists and is big enough
+            if (m_positionsBuffer == null ||
+                m_resolution.x > m_bufferResolution.x || m_resolution.y > m_bufferResolution.y)
+                CreateBuffer();
 
             m_computeShader.SetInts(m_resolutionId, m_resolution.x, m_resolution.y);
             m_computeShader.SetFloats(m_terrainSizeId, m_terrainSize.x, m_terrainSize.y, m_terrainSize.z);
@@ -65,7 +69,22 @@ namespace CaballolDev{
 
             var bounds = new Bounds(m_terrainPosition, m_terrainSize);
             m_material.SetBuffer(m_positionsId, m_positionsBuffer);
-            Graphics.DrawMeshInstancedProcedural(m_mesh, 0, m_material, bounds, m_positionsBuffer.count);
+            Graphics.DrawMeshInstancedProcedural(m_mesh, 0, m_material, bounds, m_resolution.x * m_resolution.y);
+        }
+
+        private void CreateBuffer()
+        {
+
+            ReleaseBuffer();
+            // 3*4 = 3 float of 4 bytes each
+            m_positionsBuffer = new ComputeBuffer(m_resolution.x * m_resolution.y, 3*4);
+            m_bufferResolution = m_resolution;
+        }
+
+        private void ReleaseBuffer()
+        {
+            if (m_positionsBuffer != null) m_positionsBuffer.Release();
+            m_positionsBuffer = null;
         }
     }
 }
