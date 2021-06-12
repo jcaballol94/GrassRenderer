@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CaballolDev{
     [ExecuteAlways]
@@ -25,10 +26,12 @@ namespace CaballolDev{
         [SerializeField] private Vector3 m_terrainPosition;
 
         private ComputeBuffer m_positionsBuffer;
-        private Vector2Int m_bufferResolution;
+        private int m_bufferSize;
 
         private void OnEnable()
         {
+            RenderPipelineManager.beginCameraRendering += RenderCamera;
+
             // if (!m_terrain) return;
 
             CreateBuffer();
@@ -37,6 +40,8 @@ namespace CaballolDev{
         private void OnDisable()
         {
             ReleaseBuffer();
+
+            RenderPipelineManager.beginCameraRendering -= RenderCamera;
         }
 
         private void OnValidate()
@@ -49,16 +54,25 @@ namespace CaballolDev{
             //}
         }
 
-        private void Update()
+        private void RenderCamera(ScriptableRenderContext context, Camera camera)
         {
             if (m_computeShader == null) return;
 
             // Ensure that the buffer exists and is big enough
-            if (m_positionsBuffer == null ||
-                m_resolution.x > m_bufferResolution.x || m_resolution.y > m_bufferResolution.y)
+            if (m_positionsBuffer == null || m_resolution.x * m_resolution.y > m_bufferSize)
                 CreateBuffer();
 
-            m_computeShader.SetInts(m_resolutionId, m_resolution.x, m_resolution.y);
+            var amount = m_resolution.x * m_resolution.y;
+            if (camera == Camera.main)
+            {
+                m_computeShader.SetInts(m_resolutionId, m_resolution.x / 2, m_resolution.y / 2);
+                amount /= 4;
+            }
+            else
+            {
+                m_computeShader.SetInts(m_resolutionId, m_resolution.x, m_resolution.y);
+            }
+
             m_computeShader.SetFloats(m_terrainSizeId, m_terrainSize.x, m_terrainSize.y, m_terrainSize.z);
             m_computeShader.SetFloats(m_terrainPositionId, m_terrainPosition.x, m_terrainPosition.y, m_terrainPosition.z);
             m_computeShader.SetBuffer(0, m_positionsId, m_positionsBuffer);
@@ -69,7 +83,8 @@ namespace CaballolDev{
 
             var bounds = new Bounds(m_terrainPosition, m_terrainSize);
             m_material.SetBuffer(m_positionsId, m_positionsBuffer);
-            Graphics.DrawMeshInstancedProcedural(m_mesh, 0, m_material, bounds, m_resolution.x * m_resolution.y);
+            Graphics.DrawMeshInstancedProcedural(m_mesh, 0, m_material, bounds, amount,
+                null, ShadowCastingMode.On, true, 0, camera);
         }
 
         private void CreateBuffer()
@@ -77,8 +92,8 @@ namespace CaballolDev{
 
             ReleaseBuffer();
             // 3*4 = 3 float of 4 bytes each
-            m_positionsBuffer = new ComputeBuffer(m_resolution.x * m_resolution.y, 3*4);
-            m_bufferResolution = m_resolution;
+            m_bufferSize = m_resolution.x * m_resolution.y;
+            m_positionsBuffer = new ComputeBuffer(m_bufferSize, 3*4);
         }
 
         private void ReleaseBuffer()
