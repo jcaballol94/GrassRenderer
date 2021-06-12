@@ -8,6 +8,7 @@ namespace CaballolDev{
     public class GrassRenderer : MonoBehaviour
     {
         [SerializeField] private Mesh m_mesh;
+        [SerializeField][HideInInspector] private int m_meshVersion = 0;
         [SerializeField] private Material m_material;
         //[SerializeField] private Terrain m_terrain;
         [SerializeField][Min(0.01f)] private float m_tileSize = 2f;
@@ -25,12 +26,16 @@ namespace CaballolDev{
         [SerializeField] private Vector3 m_terrainSize;
         [SerializeField] private Vector3 m_terrainPosition;
 
+        private ComputeBuffer m_argsBuffer;
         private ComputeBuffer m_positionsBuffer;
         private int m_bufferSize;
+        private int m_argsVersion;
 
         private void OnEnable()
         {
             RenderPipelineManager.beginCameraRendering += RenderCamera;
+
+            m_argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
 
             // if (!m_terrain) return;
 
@@ -41,11 +46,16 @@ namespace CaballolDev{
         {
             ReleaseBuffer();
 
+            if (m_argsBuffer != null) m_argsBuffer.Release();
+            m_argsBuffer = null;
+
             RenderPipelineManager.beginCameraRendering -= RenderCamera;
         }
 
         private void OnValidate()
         {
+            ++m_meshVersion;
+
             // if (m_terrain)
             // {
             //     var terrainSize = m_terrain.terrainData.size;
@@ -57,16 +67,23 @@ namespace CaballolDev{
         private void RenderCamera(ScriptableRenderContext context, Camera camera)
         {
             if (m_computeShader == null) return;
+            if (!m_mesh) return;
+            if (!m_material) return;
+
+            // Ensure that the args buffer matches the mesh we are using
+            if (m_argsVersion != m_meshVersion)
+                FillArgsBuffer();
 
             // Ensure that the buffer exists and is big enough
             if (m_positionsBuffer == null || m_resolution.x * m_resolution.y > m_bufferSize)
                 CreateBuffer();
 
-            var amount = m_resolution.x * m_resolution.y;
+            // Setup the data for the compute shader
+            m_positionsBuffer.SetCounterValue(0);
+
             if (camera == Camera.main)
             {
                 m_computeShader.SetInts(m_resolutionId, m_resolution.x / 2, m_resolution.y / 2);
-                amount /= 4;
             }
             else
             {
@@ -77,14 +94,19 @@ namespace CaballolDev{
             m_computeShader.SetFloats(m_terrainPositionId, m_terrainPosition.x, m_terrainPosition.y, m_terrainPosition.z);
             m_computeShader.SetBuffer(0, m_positionsId, m_positionsBuffer);
 
+            // Dispatch the compute shader
             int xGroups = Mathf.CeilToInt(m_resolution.x / 8f);
             int yGroups = Mathf.CeilToInt(m_resolution.y / 8f);
             m_computeShader.Dispatch(0, xGroups, yGroups, 1);
 
+            // Retrieve the amount of instances to draw
+            ComputeBuffer.CopyCount(m_positionsBuffer, m_argsBuffer, sizeof(uint));
+
+            // Render
             var bounds = new Bounds(m_terrainPosition, m_terrainSize);
             m_material.SetBuffer(m_positionsId, m_positionsBuffer);
-            Graphics.DrawMeshInstancedProcedural(m_mesh, 0, m_material, bounds, amount,
-                null, ShadowCastingMode.On, true, 0, camera);
+            Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_material, bounds, m_argsBuffer, 0,
+            null, ShadowCastingMode.On, true, gameObject.layer, camera);
         }
 
         private void CreateBuffer()
@@ -93,13 +115,20 @@ namespace CaballolDev{
             ReleaseBuffer();
             // 3*4 = 3 float of 4 bytes each
             m_bufferSize = m_resolution.x * m_resolution.y;
-            m_positionsBuffer = new ComputeBuffer(m_bufferSize, 3*4);
+            m_positionsBuffer = new ComputeBuffer(m_bufferSize, 3*4, ComputeBufferType.Append);
         }
 
         private void ReleaseBuffer()
         {
             if (m_positionsBuffer != null) m_positionsBuffer.Release();
             m_positionsBuffer = null;
+        }
+
+        private void FillArgsBuffer()
+        {
+            var args = new uint[] {m_mesh.GetIndexCount(0), 0, m_mesh.GetIndexStart(0), m_mesh.GetBaseVertex(0), 0};
+            m_argsBuffer.SetData(args);
+            m_argsVersion = m_meshVersion;
         }
     }
 }

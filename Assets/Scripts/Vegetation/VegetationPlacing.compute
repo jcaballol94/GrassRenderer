@@ -1,6 +1,6 @@
 #pragma kernel PlaceVegetation
 
-RWStructuredBuffer<float3> _Positions;
+AppendStructuredBuffer<float3> _Positions;
 
 float3 _TerrainSize;
 float3 _TerrainPosition;
@@ -13,9 +13,10 @@ float2 GetUV (uint3 id)
 
 void SetPosition(uint3 id, float3 position)
 {
+    // Only add instances that are in bounds
     if (id.x < _Resolution.x && id.y < _Resolution.y)
     {
-        _Positions[id.x * _Resolution.y + id.y] = position;
+        _Positions.Append(position);
     }
 }
 
