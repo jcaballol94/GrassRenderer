@@ -20,16 +20,19 @@ namespace CaballolDev{
         static readonly int m_terrainSizeId = Shader.PropertyToID("_TerrainSize");
         static readonly int m_terrainPositionId = Shader.PropertyToID("_TerrainPosition");
         static readonly int m_resolutionId = Shader.PropertyToID("_Resolution");
+        static readonly int m_frustumId = Shader.PropertyToID("_Frustum");
         #endregion
 
         [Header("Temp debug")]
         [SerializeField] private Vector3 m_terrainSize;
         [SerializeField] private Vector3 m_terrainPosition;
+        [SerializeField] private bool m_cullMainCamera = false;
 
         private ComputeBuffer m_argsBuffer;
         private ComputeBuffer m_positionsBuffer;
         private int m_bufferSize;
         private int m_argsVersion;
+        private Vector4[] m_planes = new Vector4[6];
 
         private void OnEnable()
         {
@@ -80,19 +83,22 @@ namespace CaballolDev{
 
             // Setup the data for the compute shader
             m_positionsBuffer.SetCounterValue(0);
-
-            if (camera == Camera.main)
-            {
-                m_computeShader.SetInts(m_resolutionId, m_resolution.x / 2, m_resolution.y / 2);
-            }
-            else
-            {
-                m_computeShader.SetInts(m_resolutionId, m_resolution.x, m_resolution.y);
-            }
-
+            m_computeShader.SetInts(m_resolutionId, m_resolution.x, m_resolution.y);
             m_computeShader.SetFloats(m_terrainSizeId, m_terrainSize.x, m_terrainSize.y, m_terrainSize.z);
             m_computeShader.SetFloats(m_terrainPositionId, m_terrainPosition.x, m_terrainPosition.y, m_terrainPosition.z);
             m_computeShader.SetBuffer(0, m_positionsId, m_positionsBuffer);
+
+            // Setup the culling
+            var planes = GeometryUtility.CalculateFrustumPlanes(m_cullMainCamera ? Camera.main : camera);
+            for (int i = 0; i < planes.Length; ++i)
+            {
+                var normal = planes[i].normal.normalized;
+                m_planes[i].x = normal.x;
+                m_planes[i].y = normal.y;
+                m_planes[i].z = normal.z;
+                m_planes[i].w = planes[i].distance;
+            }
+            m_computeShader.SetVectorArray(m_frustumId, m_planes);
 
             // Dispatch the compute shader
             int xGroups = Mathf.CeilToInt(m_resolution.x / 8f);
@@ -106,7 +112,7 @@ namespace CaballolDev{
             var bounds = new Bounds(m_terrainPosition, m_terrainSize);
             m_material.SetBuffer(m_positionsId, m_positionsBuffer);
             Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_material, bounds, m_argsBuffer, 0,
-            null, ShadowCastingMode.On, true, gameObject.layer, camera);
+                null, ShadowCastingMode.On, true, gameObject.layer, camera);
         }
 
         private void CreateBuffer()

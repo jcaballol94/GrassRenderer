@@ -6,6 +6,8 @@ float3 _TerrainSize;
 float3 _TerrainPosition;
 uint2 _Resolution;
 
+float4 _Frustum[6];
+
 float2 GetUV (uint3 id)
 {
     return (id.xy + 0.5) / _Resolution;
@@ -20,6 +22,19 @@ void SetPosition(uint3 id, float3 position)
     }
 }
 
+bool IsVisible (float3 position, float radius)
+{
+    bool res = true;
+    // Test all planes
+    for (int i = 0; i < 6; ++i)
+    {
+        if (dot(_Frustum[i].xyz, position) + _Frustum[i].w < -radius)
+            res = false;
+    }
+
+    return res;
+}
+
 [numthreads(8,8,1)]
 void PlaceVegetation (uint3 id : SV_DispatchThreadID)
 {
@@ -30,5 +45,6 @@ void PlaceVegetation (uint3 id : SV_DispatchThreadID)
     float3 position = _TerrainPosition;
     position.xz += uv;
 
-    SetPosition(id, position);
+    if (IsVisible(position, 1))
+        SetPosition(id, position);
 }
