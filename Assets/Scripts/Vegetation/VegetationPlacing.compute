@@ -1,12 +1,19 @@
 #pragma kernel PlaceVegetation
 
-AppendStructuredBuffer<float3> _Positions;
+AppendStructuredBuffer<float4> _Positions;
 
 float3 _TerrainSize;
 float3 _TerrainPosition;
+float2 _HeightRange;
 uint2 _Resolution;
 
 float4 _Frustum[6];
+
+float rand_1_05(in float2 uv)
+{
+    float2 noise = (frac(sin(dot(uv ,float2(12.9898,78.233)*2.0)) * 43758.5453));
+    return abs(noise.x + noise.y) * 0.5;
+}
 
 float2 rand_2_10(in float2 uv) {
     float noiseX = (frac(sin(dot(uv, float2(12.9898,78.233) * 2.0)) * 43758.5453));
@@ -19,12 +26,17 @@ float2 GetUV (uint3 id)
     return (id.xy + rand_2_10(id.xy)) / _Resolution;
 }
 
-void SetPosition(uint3 id, float3 position)
+float GetHeight(uint3 id)
+{
+    return lerp(_HeightRange.x, _HeightRange.y, rand_1_05(id.xy));
+}
+
+void SetPosition(uint3 id, float3 position, float height)
 {
     // Only add instances that are in bounds
     if (id.x < _Resolution.x && id.y < _Resolution.y)
     {
-        _Positions.Append(position);
+        _Positions.Append(float4(position, height));
     }
 }
 
@@ -50,7 +62,8 @@ void PlaceVegetation (uint3 id : SV_DispatchThreadID)
 
     float3 position = _TerrainPosition;
     position.xz += uv;
+    float height = GetHeight(id);
 
     if (IsVisible(position, 1))
-        SetPosition(id, position);
+        SetPosition(id, position, height);
 }

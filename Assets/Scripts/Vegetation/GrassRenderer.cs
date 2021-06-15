@@ -13,6 +13,7 @@ namespace CaballolDev{
         //[SerializeField] private Terrain m_terrain;
         [SerializeField][Min(0.01f)] private float m_tileSize = 2f;
         [SerializeField][HideInInspector] private Vector2Int m_resolution;
+        [SerializeField][Min(0.01f)] private Vector2 m_heightRange = new Vector2(0.5f, 1f);
         [SerializeField] ComputeShader m_computeShader;
 
         [SerializeField] private bool m_castShadows = false;
@@ -23,6 +24,7 @@ namespace CaballolDev{
         static readonly int m_terrainPositionId = Shader.PropertyToID("_TerrainPosition");
         static readonly int m_resolutionId = Shader.PropertyToID("_Resolution");
         static readonly int m_frustumId = Shader.PropertyToID("_Frustum");
+        static readonly int m_heightRangeId = Shader.PropertyToID("_HeightRange");
         #endregion
 
         [Header("Temp debug")]
@@ -61,6 +63,8 @@ namespace CaballolDev{
         {
             ++m_meshVersion;
 
+            m_heightRange.y = Mathf.Max(m_heightRange.x, m_heightRange.y);
+
             // if (m_terrain)
             // {
             //     var terrainSize = m_terrain.terrainData.size;
@@ -88,6 +92,7 @@ namespace CaballolDev{
             m_computeShader.SetInts(m_resolutionId, m_resolution.x, m_resolution.y);
             m_computeShader.SetFloats(m_terrainSizeId, m_terrainSize.x, m_terrainSize.y, m_terrainSize.z);
             m_computeShader.SetFloats(m_terrainPositionId, m_terrainPosition.x, m_terrainPosition.y, m_terrainPosition.z);
+            m_computeShader.SetFloats(m_heightRangeId, m_heightRange.x, m_heightRange.y);
             m_computeShader.SetBuffer(0, m_positionsId, m_positionsBuffer);
 
             // Setup the culling
@@ -123,7 +128,7 @@ namespace CaballolDev{
             ReleaseBuffer();
             // 3*4 = 3 float of 4 bytes each
             m_bufferSize = m_resolution.x * m_resolution.y;
-            m_positionsBuffer = new ComputeBuffer(m_bufferSize, 3*4, ComputeBufferType.Append);
+            m_positionsBuffer = new ComputeBuffer(m_bufferSize, 4*4, ComputeBufferType.Append);
         }
 
         private void ReleaseBuffer()
