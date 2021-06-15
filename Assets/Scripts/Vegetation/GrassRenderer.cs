@@ -15,6 +15,8 @@ namespace CaballolDev{
         [SerializeField][HideInInspector] private Vector2Int m_resolution;
         [SerializeField] ComputeShader m_computeShader;
 
+        [SerializeField] private bool m_castShadows = false;
+
         #region Property ID
         static readonly int m_positionsId = Shader.PropertyToID("_Positions");
         static readonly int m_terrainSizeId = Shader.PropertyToID("_TerrainSize");
@@ -112,7 +114,7 @@ namespace CaballolDev{
             var bounds = new Bounds(m_terrainPosition, m_terrainSize);
             m_material.SetBuffer(m_positionsId, m_positionsBuffer);
             Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_material, bounds, m_argsBuffer, 0,
-                null, ShadowCastingMode.On, true, gameObject.layer, camera);
+                null, m_castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, true, gameObject.layer, camera);
         }
 
         private void CreateBuffer()
