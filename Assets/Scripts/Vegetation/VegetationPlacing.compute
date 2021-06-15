@@ -8,9 +8,15 @@ uint2 _Resolution;
 
 float4 _Frustum[6];
 
+float2 rand_2_10(in float2 uv) {
+    float noiseX = (frac(sin(dot(uv, float2(12.9898,78.233) * 2.0)) * 43758.5453));
+    float noiseY = sqrt(1 - noiseX * noiseX);
+    return float2(noiseX, noiseY);
+}
+
 float2 GetUV (uint3 id)
 {
-    return (id.xy + 0.5) / _Resolution;
+    return (id.xy + rand_2_10(id.xy)) / _Resolution;
 }
 
 void SetPosition(uint3 id, float3 position)
