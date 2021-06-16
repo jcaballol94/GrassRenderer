@@ -7,13 +7,17 @@ namespace CaballolDev{
     [ExecuteAlways]
     public class GrassRenderer : MonoBehaviour
     {
-        [SerializeField] private Mesh m_mesh;
+        [Header("Mesh")]
+        [SerializeField][HideInInspector] private Mesh m_mesh;
         [SerializeField][HideInInspector] private int m_meshVersion = 0;
+        [SerializeField][Min(0.01f)] private float m_width = 0.1f;
+        [SerializeField][Min(0.01f)] private Vector2 m_heightRange = new Vector2(0.5f, 1f);
+
+        [Header("Placement")]
         [SerializeField] private Material m_material;
         //[SerializeField] private Terrain m_terrain;
         [SerializeField][Min(0.01f)] private float m_tileSize = 2f;
         [SerializeField][HideInInspector] private Vector2Int m_resolution;
-        [SerializeField][Min(0.01f)] private Vector2 m_heightRange = new Vector2(0.5f, 1f);
         [SerializeField] ComputeShader m_computeShader;
 
         [SerializeField] private bool m_castShadows = false;
@@ -139,9 +143,39 @@ namespace CaballolDev{
 
         private void FillArgsBuffer()
         {
+            GenerateMesh();
             var args = new uint[] {m_mesh.GetIndexCount(0), 0, m_mesh.GetIndexStart(0), m_mesh.GetBaseVertex(0), 0};
             m_argsBuffer.SetData(args);
             m_argsVersion = m_meshVersion;
+        }
+
+        private void GenerateMesh()
+        {
+            var halfWidth = m_width * 0.5f;
+            var positions = new Vector3[]
+            {
+                new Vector3(-halfWidth, 0f, 0f),
+                Vector3.up,
+                new Vector3(halfWidth, 0f, 0f)
+            };
+
+            var normals = new Vector3[] {Vector3.forward, Vector3.forward, Vector3.forward};
+            
+            var uv = new Vector2[]
+            {
+                Vector2.zero,
+                new Vector2(0.5f, 1f),
+                Vector2.right
+            };
+
+            var triangles = new int[] { 0, 1, 2 };
+
+            m_mesh = new Mesh();
+            m_mesh.name = name + "_mesh";
+            m_mesh.vertices = positions;
+            m_mesh.normals = normals;
+            m_mesh.uv = uv;
+            m_mesh.triangles = triangles;
         }
     }
 }
