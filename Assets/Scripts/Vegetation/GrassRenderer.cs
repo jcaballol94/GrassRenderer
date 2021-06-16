@@ -159,7 +159,7 @@ namespace CaballolDev{
                 new Vector3(halfWidth, 0f, 0f)
             };
 
-            var normals = new Vector3[] {Vector3.forward, Vector3.forward, Vector3.forward};
+            var normals = new Vector3[] {Vector3.up, Vector3.up, Vector3.up};
             
             var uv = new Vector2[]
             {
