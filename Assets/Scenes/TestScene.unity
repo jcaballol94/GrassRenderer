@@ -123,7 +123,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!43 &543415753
+--- !u!43 &271977743
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -747,10 +747,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e367a3edca7fc834185b581384e96b9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_mesh: {fileID: 543415753}
-  m_meshVersion: 1056
+  m_mesh: {fileID: 271977743}
+  m_meshVersion: 1114
   m_width: 0.1
-  m_heightRange: {x: 0.7, y: 1}
+  m_heightRange: {x: 0.5, y: 0.7}
   m_material: {fileID: 2100000, guid: b8462068cce6ada4b87c520f5934ffca, type: 2}
   m_tileSize: 0.1
   m_resolution: {x: 1000, y: 1000}
