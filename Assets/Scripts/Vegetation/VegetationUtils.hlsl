@@ -3,6 +3,11 @@
 
 #include "noise.hlsl"
 
+float4 _GlobalWindDir;
+float4 _GlobalWindParams;
+float4 _GlobalWindIntDir;
+float4 _GlobalWindIntParams;
+
 void Billboard_float(in float3 InPos, in float3 ViewDir, out float3 OutPos)
 {
 	// Get the flat view dir (reversed)
@@ -27,18 +32,38 @@ void SmallWind_float(in float3 WorldPivot, in float WindAmplitude, in float Wind
 	float2 noiseUv = WorldPivot.xz;
 
 	// Get a random direction for this
-	float3 dir = 0;
-	dir.xz = normalize(rand_2_10(noiseUv));
+	float2 dir = normalize(rand_2_10(noiseUv));
 
 	// Get a random angle based on the sinus
-	float time = rand_1_05(noiseUv);
+	float time = rand_1_05(noiseUv * 7.235);
 	time += Time;
 	time *= WindFrequency;
 	time = frac(time) * 360;
 	float angle = WindAmplitude * sin(radians(time));
 
 	// Return
-	Wind = dir.xz * angle;
+	Wind = dir * angle;
+}
+
+float ComputeWindWave (in float3 WorldPivot, in float Time, in float3 Dir, in float3 Params)
+{
+    float time = Time;
+	time *= Params.y;
+    time -= dot(Dir.xyz, WorldPivot) / Params.x;
+	time = frac(time) * 360;
+	return Params.z * (sin(radians(time)) * 0.5 + 0.5);
+}
+
+void BigWind_float(in float3 WorldPivot, in float Time, out float2 Wind)
+{
+	// Extract the dir
+	float2 dir = _GlobalWindDir.xz;
+
+	// Calculate the waves
+    float angle = ComputeWindWave(WorldPivot, Time, _GlobalWindDir.xyz, _GlobalWindParams.xyz);
+    angle *= ComputeWindWave(WorldPivot, Time, _GlobalWindIntDir.xyz, _GlobalWindIntParams.xyz);
+
+    Wind = dir * angle;
 }
 
 void ApplyWind_float(in float3 Pos, in float Height, in float2 Wind, out float3 OutPos)
