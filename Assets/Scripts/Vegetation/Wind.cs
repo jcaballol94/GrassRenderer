@@ -41,6 +41,6 @@ public class Wind : MonoBehaviour
         Shader.SetGlobalVector(m_globalWindDirId, transform.forward);
         Shader.SetGlobalVector(m_globalWindParamsId, new Vector4(m_amplitude, m_speed, m_strength));
         Shader.SetGlobalVector(m_globalWindIntDirId, Quaternion.AngleAxis(m_gustsAngle, Vector3.up) * transform.forward);
-        Shader.SetGlobalVector(m_globalWindIntParamsId, new Vector4(m_gustsAmplitude, m_gustsSpeed, 1f));
+        Shader.SetGlobalVector(m_globalWindIntParamsId, new Vector4(m_gustsAmplitude, m_gustsSpeed, m_strength));
     }
 }
