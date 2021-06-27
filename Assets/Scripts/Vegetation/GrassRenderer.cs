@@ -12,6 +12,7 @@ namespace CaballolDev{
         [SerializeField][HideInInspector] private int m_meshVersion = 0;
         [SerializeField][Min(0.01f)] private float m_width = 0.1f;
         [SerializeField][Min(0.01f)] private Vector2 m_heightRange = new Vector2(0.5f, 0.7f);
+        [SerializeField][Min(0)] private int m_subdivisions = 1;
 
         [Header("Placement")]
         [SerializeField] private Material m_material;
@@ -152,24 +153,65 @@ namespace CaballolDev{
         private void GenerateMesh()
         {
             var halfWidth = m_width * 0.5f;
-            var positions = new Vector3[]
-            {
-                new Vector3(-halfWidth, 0f, 0f),
-                Vector3.up,
-                new Vector3(halfWidth, 0f, 0f)
-            };
 
-            var normals = new Vector3[] {Vector3.up, Vector3.up, Vector3.up};
+            // There's a quad for every subdivision and a triangle at the top
+            var numVertices = 4 * m_subdivisions + 3;
+            var numTriangles = 6 * m_subdivisions + 3;
+
+            var heightStep = 1f / (m_subdivisions + 1);
+
+            // Create the buffers
+            var positions = new Vector3[numVertices];
+            var normals = new Vector3[numVertices];
+            var uv = new Vector2[numVertices];
+            var triangles = new int[numTriangles];
+
+            // Fill with the quads
+            for (int i = 0; i <= m_subdivisions; ++i)
+            {
+                var height = heightStep * i;
+                var width = (1f - height) * halfWidth;
+                var vertIdx = i * 2;
+
+                // Positions
+                positions[vertIdx] = new Vector3(-width, height, 0f);
+                positions[vertIdx + 1] = new Vector3(width, height, 0f);
+
+                // Normals
+                normals[vertIdx] = Vector3.up;
+                normals[vertIdx + 1] = Vector3.up;
+
+                // UV
+                uv[vertIdx] = new Vector2(0f, height);
+                uv[vertIdx + 1] = new Vector2(1f, height);
+
+                // If needed, add the tris
+                if (i > 0)
+                {
+                    var triIdx = (i - 1) * 6;
+                    triangles[triIdx] = vertIdx - 1;
+                    triangles[triIdx + 1] = vertIdx - 2;
+                    triangles[triIdx + 2] = vertIdx;
+
+                    triangles[triIdx + 3] = vertIdx - 1;
+                    triangles[triIdx + 4] = vertIdx;
+                    triangles[triIdx + 5] = vertIdx + 1;
+                }
+            }
+
+            // Fill the tip vertex
+            var lastVertIdx = (m_subdivisions + 1) * 2;
+            positions[lastVertIdx] = new Vector3(0f, 1f, 0f);
+            normals[lastVertIdx] = Vector3.up;
+            uv[lastVertIdx] = new Vector2(0.5f, 1f);
             
-            var uv = new Vector2[]
-            {
-                Vector2.zero,
-                new Vector2(0.5f, 1f),
-                Vector2.right
-            };
+            // Fill the last tri
+            var lastTriIdx = (m_subdivisions) * 6;
+            triangles[lastTriIdx] = lastVertIdx - 1;
+            triangles[lastTriIdx + 1] = lastVertIdx - 2;
+            triangles[lastTriIdx + 2] = lastVertIdx;
 
-            var triangles = new int[] { 0, 1, 2 };
-
+            // Create the unity mesh
             m_mesh = new Mesh();
             m_mesh.name = name + "_mesh";
             m_mesh.vertices = positions;
