@@ -144,7 +144,7 @@ namespace CaballolDev{
             ReleaseBuffer();
             // 3*4 = 3 float of 4 bytes each
             m_bufferSize = m_resolution.x * m_resolution.y;
-            m_positionsBuffer = new ComputeBuffer(m_bufferSize, 4*4, ComputeBufferType.Append);
+            m_positionsBuffer = new ComputeBuffer(m_bufferSize, 4*8, ComputeBufferType.Append);
         }
 
         private void ReleaseBuffer()

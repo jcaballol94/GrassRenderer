@@ -2,7 +2,13 @@
 
 #pragma kernel PlaceVegetation
 
-AppendStructuredBuffer<float4> _Positions;
+struct instance
+{
+    float4 positions;
+    float4 normals;
+};
+
+AppendStructuredBuffer<instance> _Positions;
 
 float3 _TerrainSize;
 float3 _TerrainPosition;
@@ -25,12 +31,15 @@ float GetHeight(uint3 id)
     return lerp(_HeightRange.x, _HeightRange.y, rand_1_05(id.xy));
 }
 
-void SetPosition(uint3 id, float3 position, float height)
+void SetPosition(uint3 id, float3 position, float3 normal, float height)
 {
     // Only add instances that are in bounds
     if (id.x < _Resolution.x && id.y < _Resolution.y)
     {
-        _Positions.Append(float4(position, height));
+        instance ins;
+        ins.positions = float4(position, height);
+        ins.normals = float4(normal, 0);
+        _Positions.Append(ins);
     }
 }
 
@@ -57,8 +66,16 @@ void PlaceVegetation (uint3 id : SV_DispatchThreadID)
 
     position.y += _HeightMap.SampleLevel(linearClampSampler, uv, 0) * _TerrainHeight * 2;
 
+    float2 change = 1 / _TerrainSize.xz;
+    float left = _HeightMap.SampleLevel(linearClampSampler, uv - float2(change.x, 0), 0) * _TerrainHeight * 2;
+    float right = _HeightMap.SampleLevel(linearClampSampler, uv + float2(change.x, 0), 0) * _TerrainHeight * 2;
+    float up = _HeightMap.SampleLevel(linearClampSampler, uv + float2(0, change.y), 0) * _TerrainHeight * 2;
+    float down = _HeightMap.SampleLevel(linearClampSampler, uv - float2(0, change.y), 0) * _TerrainHeight * 2;
+
+    float3 normal = normalize(float3(2 * (left - right), 4, 2*(down - up)));
+
     float height = GetHeight(id);
 
     if (IsVisible(position, 1))
-        SetPosition(id, position, height);
+        SetPosition(id, position, normal, height);
 }
