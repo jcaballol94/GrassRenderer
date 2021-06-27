@@ -8,6 +8,10 @@ float3 _TerrainSize;
 float3 _TerrainPosition;
 float2 _HeightRange;
 uint2 _Resolution;
+float _TerrainHeight;
+
+Texture2D<float> _HeightMap;
+SamplerState linearClampSampler;
 
 float4 _Frustum[6];
 
@@ -47,10 +51,12 @@ bool IsVisible (float3 position, float radius)
 void PlaceVegetation (uint3 id : SV_DispatchThreadID)
 {
     float2 uv = GetUV(id);
-    uv *= _TerrainSize.xz;
-
+    
     float3 position = _TerrainPosition;
-    position.xz += uv;
+    position.xz += uv * _TerrainSize.xz;
+
+    position.y += _HeightMap.SampleLevel(linearClampSampler, uv, 0) * _TerrainHeight * 2;
+
     float height = GetHeight(id);
 
     if (IsVisible(position, 1))

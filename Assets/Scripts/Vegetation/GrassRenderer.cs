@@ -30,6 +30,8 @@ namespace CaballolDev{
         static readonly int m_resolutionId = Shader.PropertyToID("_Resolution");
         static readonly int m_frustumId = Shader.PropertyToID("_Frustum");
         static readonly int m_heightRangeId = Shader.PropertyToID("_HeightRange");
+        static readonly int m_heightMapId = Shader.PropertyToID("_HeightMap");
+        static readonly int m_terrainHeightId = Shader.PropertyToID("_TerrainHeight");
         #endregion
 
         [Header("Temp debug")]
@@ -107,6 +109,8 @@ namespace CaballolDev{
             m_computeShader.SetFloats(m_terrainPositionId, terrainPos.x, terrainPos.y, terrainPos.z);
             m_computeShader.SetFloats(m_heightRangeId, m_heightRange.x, m_heightRange.y);
             m_computeShader.SetBuffer(0, m_positionsId, m_positionsBuffer);
+            m_computeShader.SetFloat(m_terrainHeightId, m_terrain.terrainData.size.y);
+            m_computeShader.SetTexture(0, m_heightMapId, m_terrain.terrainData.heightmapTexture);
 
             // Setup the culling
             var planes = GeometryUtility.CalculateFrustumPlanes(m_cullMainCamera ? Camera.main : camera);
