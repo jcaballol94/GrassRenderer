@@ -12,11 +12,11 @@ namespace CaballolDev{
         [SerializeField][HideInInspector] private int m_meshVersion = 0;
         [SerializeField][Min(0.01f)] private float m_width = 0.1f;
         [SerializeField][Min(0.01f)] private Vector2 m_heightRange = new Vector2(0.5f, 0.7f);
-        [SerializeField][Min(0)] private int m_subdivisions = 1;
+        [SerializeField][Min(0)] private int m_subdivisions = 3;
 
         [Header("Placement")]
         [SerializeField] private Material m_material;
-        //[SerializeField] private Terrain m_terrain;
+        [SerializeField] private Terrain m_terrain;
         [SerializeField][Min(0.01f)] private float m_tileSize = 0.1f;
         [SerializeField][HideInInspector] private Vector2Int m_resolution;
         [SerializeField] ComputeShader m_computeShader;
@@ -33,8 +33,6 @@ namespace CaballolDev{
         #endregion
 
         [Header("Temp debug")]
-        [SerializeField] private Vector3 m_terrainSize;
-        [SerializeField] private Vector3 m_terrainPosition;
         [SerializeField] private bool m_cullMainCamera = false;
 
         private ComputeBuffer m_argsBuffer;
@@ -49,7 +47,7 @@ namespace CaballolDev{
 
             m_argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
 
-            // if (!m_terrain) return;
+            if (!m_terrain) return;
 
             CreateBuffer();
         }
@@ -70,23 +68,31 @@ namespace CaballolDev{
 
             m_heightRange.y = Mathf.Max(m_heightRange.x, m_heightRange.y);
 
-            // if (m_terrain)
-            // {
-            //     var terrainSize = m_terrain.terrainData.size;
-                m_resolution.x = Mathf.CeilToInt(m_terrainSize.x / m_tileSize);
-                m_resolution.y = Mathf.CeilToInt(m_terrainSize.z / m_tileSize);
-            //}
+            if (!m_terrain)
+            {
+                m_terrain = GetComponent<Terrain>();
+            }
+
+            if (m_terrain)
+            {
+                var terrainSize = m_terrain.terrainData.size;
+                m_resolution.x = Mathf.CeilToInt(terrainSize.x / m_tileSize);
+                m_resolution.y = Mathf.CeilToInt(terrainSize.z / m_tileSize);
+            }
         }
 
         private void RenderCamera(ScriptableRenderContext context, Camera camera)
         {
             if (m_computeShader == null) return;
-            if (!m_mesh) return;
             if (!m_material) return;
+            if (!m_terrain) return;
 
             // Ensure that the args buffer matches the mesh we are using
             if (m_argsVersion != m_meshVersion)
                 FillArgsBuffer();
+
+            // Couldn't generate mesh, abort
+            if (!m_mesh) return;
 
             // Ensure that the buffer exists and is big enough
             if (m_positionsBuffer == null || m_resolution.x * m_resolution.y > m_bufferSize)
@@ -95,8 +101,10 @@ namespace CaballolDev{
             // Setup the data for the compute shader
             m_positionsBuffer.SetCounterValue(0);
             m_computeShader.SetInts(m_resolutionId, m_resolution.x, m_resolution.y);
-            m_computeShader.SetFloats(m_terrainSizeId, m_terrainSize.x, m_terrainSize.y, m_terrainSize.z);
-            m_computeShader.SetFloats(m_terrainPositionId, m_terrainPosition.x, m_terrainPosition.y, m_terrainPosition.z);
+            var terrainSize = m_terrain.terrainData.size;
+            m_computeShader.SetFloats(m_terrainSizeId, terrainSize.x, terrainSize.y, terrainSize.z);
+            var terrainPos = m_terrain.transform.position;
+            m_computeShader.SetFloats(m_terrainPositionId, terrainPos.x, terrainPos.y, terrainPos.z);
             m_computeShader.SetFloats(m_heightRangeId, m_heightRange.x, m_heightRange.y);
             m_computeShader.SetBuffer(0, m_positionsId, m_positionsBuffer);
 
@@ -113,15 +121,15 @@ namespace CaballolDev{
             m_computeShader.SetVectorArray(m_frustumId, m_planes);
 
             // Dispatch the compute shader
-            int xGroups = Mathf.CeilToInt(m_resolution.x / 8f);
-            int yGroups = Mathf.CeilToInt(m_resolution.y / 8f);
+            int xGroups = Mathf.CeilToInt(m_resolution.x / 32f);
+            int yGroups = Mathf.CeilToInt(m_resolution.y / 32f);
             m_computeShader.Dispatch(0, xGroups, yGroups, 1);
 
             // Retrieve the amount of instances to draw
             ComputeBuffer.CopyCount(m_positionsBuffer, m_argsBuffer, sizeof(uint));
 
             // Render
-            var bounds = new Bounds(m_terrainPosition, m_terrainSize);
+            var bounds = new Bounds(m_terrain.transform.position, m_terrain.terrainData.size);
             m_material.SetBuffer(m_positionsId, m_positionsBuffer);
             Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_material, bounds, m_argsBuffer, 0,
                 null, m_castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, true, gameObject.layer, camera);
@@ -129,7 +137,6 @@ namespace CaballolDev{
 
         private void CreateBuffer()
         {
-
             ReleaseBuffer();
             // 3*4 = 3 float of 4 bytes each
             m_bufferSize = m_resolution.x * m_resolution.y;
