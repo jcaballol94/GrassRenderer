@@ -133,7 +133,7 @@ namespace CaballolDev{
             ComputeBuffer.CopyCount(m_positionsBuffer, m_argsBuffer, sizeof(uint));
 
             // Render
-            var bounds = new Bounds(m_terrain.transform.position, m_terrain.terrainData.size);
+            var bounds = new Bounds(terrainPos + 0.5f * terrainSize, terrainSize);
             m_material.SetBuffer(m_positionsId, m_positionsBuffer);
             Graphics.DrawMeshInstancedIndirect(m_mesh, 0, m_material, bounds, m_argsBuffer, 0,
                 null, m_castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, true, gameObject.layer, camera);
