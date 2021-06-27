@@ -5,12 +5,12 @@ using UnityEngine;
 [ExecuteAlways]
 public class Wind : MonoBehaviour
 {
-    [SerializeField] private float m_speed;
-    [SerializeField] private float m_strength;
-    [SerializeField] private float m_amplitude;
-    [SerializeField][Range(-90f, 90f)] private float m_gustsAngle;
-    [SerializeField] private float m_gustsSpeed;
-    [SerializeField] private float m_gustsAmplitude;
+    [SerializeField] private float m_speed = 0.3f;
+    [SerializeField] private float m_strength = 13.8f;
+    [SerializeField] private float m_amplitude = 15f;
+    [SerializeField][Range(-90f, 90f)] private float m_gustsAngle = 20f;
+    [SerializeField] private float m_gustsSpeed = 0.2f;
+    [SerializeField] private float m_gustsAmplitude = 20f;
 
     private readonly int m_globalWindDirId = Shader.PropertyToID("_GlobalWindDir");
     private readonly int m_globalWindParamsId = Shader.PropertyToID("_GlobalWindParams");

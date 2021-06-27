@@ -11,12 +11,12 @@ namespace CaballolDev{
         [SerializeField][HideInInspector] private Mesh m_mesh;
         [SerializeField][HideInInspector] private int m_meshVersion = 0;
         [SerializeField][Min(0.01f)] private float m_width = 0.1f;
-        [SerializeField][Min(0.01f)] private Vector2 m_heightRange = new Vector2(0.5f, 1f);
+        [SerializeField][Min(0.01f)] private Vector2 m_heightRange = new Vector2(0.5f, 0.7f);
 
         [Header("Placement")]
         [SerializeField] private Material m_material;
         //[SerializeField] private Terrain m_terrain;
-        [SerializeField][Min(0.01f)] private float m_tileSize = 2f;
+        [SerializeField][Min(0.01f)] private float m_tileSize = 0.1f;
         [SerializeField][HideInInspector] private Vector2Int m_resolution;
         [SerializeField] ComputeShader m_computeShader;
 
