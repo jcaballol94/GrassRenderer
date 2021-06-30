@@ -17,6 +17,8 @@ namespace CaballolDev{
         [Header("Placement")]
         [SerializeField] private Material m_material;
         [SerializeField] private Terrain m_terrain;
+        [SerializeField] [Min(0)] private int m_terrainLayer;
+        [SerializeField] [HideInInspector] private Vector4 m_terrainLayerMask;
         [SerializeField][Min(0.01f)] private float m_tileSize = 0.1f;
         [SerializeField][HideInInspector] private Vector2Int m_resolution;
         [SerializeField] ComputeShader m_computeShader;
@@ -32,6 +34,8 @@ namespace CaballolDev{
         static readonly int m_heightRangeId = Shader.PropertyToID("_HeightRange");
         static readonly int m_heightMapId = Shader.PropertyToID("_HeightMap");
         static readonly int m_terrainHeightId = Shader.PropertyToID("_TerrainHeight");
+        static readonly int m_splatMapId = Shader.PropertyToID("_SplatMap");
+        static readonly int m_terrainLayerId = Shader.PropertyToID("_TerrainLayer");
         #endregion
 
         [Header("Temp debug")]
@@ -81,6 +85,9 @@ namespace CaballolDev{
                 m_resolution.x = Mathf.CeilToInt(terrainSize.x / m_tileSize);
                 m_resolution.y = Mathf.CeilToInt(terrainSize.z / m_tileSize);
             }
+
+            m_terrainLayerMask = Vector4.zero;
+            m_terrainLayerMask[m_terrainLayer] = 1f;
         }
 
         private void RenderCamera(ScriptableRenderContext context, Camera camera)
@@ -111,6 +118,8 @@ namespace CaballolDev{
             m_computeShader.SetBuffer(0, m_positionsId, m_positionsBuffer);
             m_computeShader.SetFloat(m_terrainHeightId, m_terrain.terrainData.size.y);
             m_computeShader.SetTexture(0, m_heightMapId, m_terrain.terrainData.heightmapTexture);
+            m_computeShader.SetVector(m_terrainLayerId, m_terrainLayerMask);
+            m_computeShader.SetTexture(0, m_splatMapId, m_terrain.terrainData.alphamapTextures[0]);
 
             // Setup the culling
             var planes = GeometryUtility.CalculateFrustumPlanes(m_cullMainCamera ? Camera.main : camera);

@@ -15,8 +15,10 @@ float3 _TerrainPosition;
 float2 _HeightRange;
 uint2 _Resolution;
 float _TerrainHeight;
+float4 _TerrainLayer;
 
 Texture2D<float> _HeightMap;
+Texture2D<float4> _SplatMap;
 SamplerState linearClampSampler;
 
 float4 _Frustum[6];
@@ -76,6 +78,9 @@ void PlaceVegetation (uint3 id : SV_DispatchThreadID)
 
     float height = GetHeight(id);
 
-    if (IsVisible(position, 1))
+    float4 splat = _SplatMap.SampleLevel(linearClampSampler, uv, 0) * _TerrainLayer;
+    float weight = splat.x + splat.y + splat.z + splat.w;
+
+    if (weight > 0.5 && IsVisible(position, 1))
         SetPosition(id, position, normal, height);
 }

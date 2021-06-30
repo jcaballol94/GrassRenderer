@@ -16,7 +16,7 @@ void Billboard_float(in float3 InPos, in float3 ViewDir, out float3 OutPos)
 	normalize(forward);
 
 	// Get the right vector
-	float3 right = cross(float3(0,1,0), forward);
+	float3 right = normalize(cross(float3(0,1,0), forward));
 
 	// Construct a matrix with them
 	float4x4 rotMatrix = 0;
