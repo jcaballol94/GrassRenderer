@@ -32,7 +32,7 @@ void SmallWind_float(in float3 WorldPivot, in float WindAmplitude, in float Wind
 	float2 noiseUv = WorldPivot.xz;
 
 	// Get a random direction for this
-	float2 dir = normalize(rand_2_10(noiseUv));
+	float2 dir = normalize(rand_2_10(noiseUv) - 0.5);
 
 	// Get a random angle based on the sinus
 	float time = rand_1_05(noiseUv * 7.235);
