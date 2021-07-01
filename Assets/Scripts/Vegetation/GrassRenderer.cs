@@ -7,6 +7,15 @@ namespace CaballolDev{
     [ExecuteAlways]
     public class GrassRenderer : MonoBehaviour
     {
+        [System.Flags]
+        public enum TerrainLayer
+        {
+            LAYER_0 = 0x01,
+            LAYER_1 = 0x02,
+            LAYER_2 = 0x04,
+            LAYER_3 = 0x08
+        }
+
         [Header("Mesh")]
         [SerializeField][HideInInspector] private Mesh m_mesh;
         [SerializeField][HideInInspector] private int m_meshVersion = 0;
@@ -17,7 +26,7 @@ namespace CaballolDev{
         [Header("Placement")]
         [SerializeField] private Material m_material;
         [SerializeField] private Terrain m_terrain;
-        [SerializeField] [Min(0)] private int m_terrainLayer;
+        [SerializeField] private TerrainLayer m_terrainLayer = TerrainLayer.LAYER_0;
         [SerializeField] [HideInInspector] private Vector4 m_terrainLayerMask;
         [SerializeField][Min(0.01f)] private float m_tileSize = 0.1f;
         [SerializeField][HideInInspector] private Vector2Int m_resolution;
@@ -86,8 +95,11 @@ namespace CaballolDev{
                 m_resolution.y = Mathf.CeilToInt(terrainSize.z / m_tileSize);
             }
 
-            m_terrainLayerMask = Vector4.zero;
-            m_terrainLayerMask[m_terrainLayer] = 1f;
+            m_terrainLayerMask = new Vector4(
+                m_terrainLayer.HasFlag(TerrainLayer.LAYER_0) ? 1f : 0f,
+                m_terrainLayer.HasFlag(TerrainLayer.LAYER_1) ? 1f : 0f,
+                m_terrainLayer.HasFlag(TerrainLayer.LAYER_2) ? 1f : 0f,
+                m_terrainLayer.HasFlag(TerrainLayer.LAYER_3) ? 1f : 0f);
         }
 
         private void RenderCamera(ScriptableRenderContext context, Camera camera)
